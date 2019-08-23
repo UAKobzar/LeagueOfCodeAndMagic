@@ -8,6 +8,7 @@ namespace LegendsOfCodeAndMagic
     class Referee
     {
         public Board Board { get; set; }
+        public Board InitialBoard { get; set; }
 
         public int PlayerNumber { get; set; }
         public int DeffenderNumber { get; set; }
@@ -15,7 +16,7 @@ namespace LegendsOfCodeAndMagic
         public void Summon(int id)
         {
             var player = Board.Players[PlayerNumber];
-            var card = player.Cards.FirstOrDefault(c => c.Id == id);
+            var card = player.Cards.FirstOrDefault(c => c.InstanceId == id);
             
 
             if(card != null && card.Cost <= player.Mana)
@@ -28,7 +29,7 @@ namespace LegendsOfCodeAndMagic
 
         public void Attack(int attackerId, int deffenderId)
         {
-            var attacker = Board.PlayersBoards[PlayerNumber].FirstOrDefault(c => c.Id == attackerId);
+            var attacker = Board.PlayersBoards[PlayerNumber].FirstOrDefault(c => c.InstanceId == attackerId);
 
             if(attacker != null)
             {
@@ -38,7 +39,7 @@ namespace LegendsOfCodeAndMagic
                 }
                 else
                 {
-                    var deffender = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.Id == deffenderId);
+                    var deffender = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
 
                     if(deffender != null)
                     {
@@ -57,6 +58,40 @@ namespace LegendsOfCodeAndMagic
                     }
                 }
             }
+        }
+
+        public void EndMove()
+        {
+
+            var tmp = DeffenderNumber;
+            DeffenderNumber = PlayerNumber;
+            PlayerNumber = DeffenderNumber;
+
+            Board.Players[PlayerNumber].Mana = ++Board.Players[PlayerNumber].MaxMana;
+            if (Board.Players[PlayerNumber].Deck.Any())
+            {
+                Board.Players[PlayerNumber].Cards.Add(Board.Players[PlayerNumber].Deck.Dequeue());
+            }
+        }
+
+        public void Reset()
+        {
+            Board = InitialBoard.Clone() as Board;
+        }
+
+        public int GetScore(int playerNumber)
+        {
+            var defenderNumber = playerNumber == 0 ? 1 : 0;
+
+            var score = 0;
+
+            score += Board.PlayersBoards[playerNumber].Sum(c => c.Health + c.Damage);
+            score -= Board.PlayersBoards[defenderNumber].Sum(c => c.Health + c.Damage);
+
+            score += Board.Players[playerNumber].HP;
+            score -= Board.Players[playerNumber].HP;
+
+            return score;
         }
 
     }

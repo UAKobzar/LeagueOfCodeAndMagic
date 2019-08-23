@@ -5,8 +5,14 @@ using System.Text;
 
 namespace LegendsOfCodeAndMagic
 {
-    public class Player : ICloneable
+    public class GamePlayer : ICloneable
     {
+        public GamePlayer()
+        {
+            Cards = new List<Card>();
+            Deck = new Queue<Card>();
+        }
+
         public List<Card> Cards { get; set; }
         public Queue<Card> Deck { get; set; }
 
@@ -16,11 +22,13 @@ namespace LegendsOfCodeAndMagic
 
         public object Clone()
         {
-            return new Player
+            return new GamePlayer
             {
                 Cards = this.Cards.Select(c => c.Clone() as Card).ToList(),
                 Deck = new Queue<Card>(this.Deck.Select(q => q.Clone() as Card)),
-                MaxMana = MaxMana
+                MaxMana = this.MaxMana,
+                Mana = this.Mana,
+                HP = this.HP
             };
         }
     }

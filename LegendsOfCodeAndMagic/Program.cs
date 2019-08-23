@@ -2,11 +2,22 @@
 
 namespace LegendsOfCodeAndMagic
 {
-    class Program
+    class Player
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            TurnProcessor processor = new TurnProcessor();
+
+            for (int i = 0; i < 30; i++)
+            {
+                processor.ProcessDraftTurn();
+            }
+
+            // game loop
+            while (true)
+            {
+                processor.ProcessGameTurn();
+            }
         }
     }
 }
