@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LegendsOfCodeAndMagic", "LegendsOfCodeAndMagic\LegendsOfCodeAndMagic.csproj", "{4142A4EF-C6BD-44EF-AAA8-F1BB835A5475}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LegendsOfCodeAndMagic", "LegendsOfCodeAndMagic\LegendsOfCodeAndMagic.csproj", "{4142A4EF-C6BD-44EF-AAA8-F1BB835A5475}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{F011C91D-A03A-4C9B-A560-EB77FD1E73DD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardParser", "CardParser\CardParser.csproj", "{6527B5F0-5E01-455C-9C2E-DF27542C295F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminal", "Terminal\Terminal.csproj", "{1D34448C-9DF6-44C8-8BA4-AFE8E48ECDB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneFileCompiller", "OneFileCompiller\OneFileCompiller.csproj", "{0F0F68F9-2422-49F9-B804-EC978A488474}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +21,18 @@ Global
 		{4142A4EF-C6BD-44EF-AAA8-F1BB835A5475}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4142A4EF-C6BD-44EF-AAA8-F1BB835A5475}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4142A4EF-C6BD-44EF-AAA8-F1BB835A5475}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F011C91D-A03A-4C9B-A560-EB77FD1E73DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F011C91D-A03A-4C9B-A560-EB77FD1E73DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F011C91D-A03A-4C9B-A560-EB77FD1E73DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F011C91D-A03A-4C9B-A560-EB77FD1E73DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6527B5F0-5E01-455C-9C2E-DF27542C295F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6527B5F0-5E01-455C-9C2E-DF27542C295F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6527B5F0-5E01-455C-9C2E-DF27542C295F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6527B5F0-5E01-455C-9C2E-DF27542C295F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D34448C-9DF6-44C8-8BA4-AFE8E48ECDB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D34448C-9DF6-44C8-8BA4-AFE8E48ECDB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D34448C-9DF6-44C8-8BA4-AFE8E48ECDB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D34448C-9DF6-44C8-8BA4-AFE8E48ECDB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F0F68F9-2422-49F9-B804-EC978A488474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F0F68F9-2422-49F9-B804-EC978A488474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F0F68F9-2422-49F9-B804-EC978A488474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F0F68F9-2422-49F9-B804-EC978A488474}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
