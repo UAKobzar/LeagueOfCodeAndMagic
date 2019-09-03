@@ -19,6 +19,7 @@ namespace LegendsOfCodeAndMagic
         public int MaxMana { get; set; }
         public int Mana { get; set; }
         public int HP { get; set; }
+        public int NextTurnDraw { get; set; }
 
         public object Clone()
         {
@@ -28,7 +29,8 @@ namespace LegendsOfCodeAndMagic
                 Deck = new Queue<Card>(this.Deck.Select(q => q.Clone() as Card)),
                 MaxMana = this.MaxMana,
                 Mana = this.Mana,
-                HP = this.HP
+                HP = this.HP,
+                NextTurnDraw = this.NextTurnDraw
             };
         }
     }

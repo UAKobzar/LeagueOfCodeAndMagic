@@ -30,45 +30,87 @@ namespace LegendsOfCodeAndMagic
         {
             string result = "";
 
-            var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => c.InstanceId).ToList();
+            var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => new { c.InstanceId, PlayType= "S"} ).ToList();
 
-            foreach (var item in cardIds)
+            if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
+            {
+                cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
+            }
+
+            var count = cardIds.Count;
+
+            for (int i = 0; i < count; i++)
             {
                 var enemyBoard = referee.Board.PlayersBoards[referee.DeffenderNumber];
-                var enemyCardsCount = enemyBoard.Count;
+                var hasGuards = enemyBoard.Any(c => c.Abilities.Contains("G"));
+                var enemyCards = hasGuards ? enemyBoard.Where(c => c.Abilities.Contains("G")) : enemyBoard;
+                var enemyCardsCount = enemyCards.Count();
 
-                var deffender = _random.Next(-1, enemyCardsCount);
-
-                if (deffender != -1)
+                var deffender = _random.Next(-2, enemyCardsCount);
+                if(deffender == -1 && hasGuards)
                 {
-                    deffender = enemyBoard[deffender].InstanceId;
+                    deffender = 0;
                 }
+                var attacker = _random.Next(cardIds.Count);
+                var attackerItem = cardIds[attacker];
+                cardIds.RemoveAt(attacker);
 
-                referee.Attack(item, deffender);
-
-                if (getMoveAsString)
+                if(deffender != -2)
                 {
-                    result += $"ATTACK {item} {deffender}; ";
+                    if (deffender != -1)
+                    {
+                        deffender = enemyCards.ElementAt(deffender).InstanceId;
+                    }
+
+                    if(attackerItem.PlayType == "C")
+                    {
+                        var card = referee.Board.Players[referee.PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == attackerItem.InstanceId);
+
+                        if(card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                        {
+                            referee.Summon(attackerItem.InstanceId);
+                            referee.Attack(attackerItem.InstanceId, deffender);
+
+                            if (getMoveAsString)
+                            {
+                                result += $"SUMMON {attackerItem.InstanceId}; ";
+                                result += $"ATTACK {attackerItem.InstanceId} {deffender}; ";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        referee.Attack(attackerItem.InstanceId, deffender);
+
+                        if (getMoveAsString)
+                        {
+                            result += $"ATTACK {attackerItem.InstanceId} {deffender}; ";
+                        }
+                    }
                 }
             }
 
             var cards = referee.Board.Players[referee.PlayerNumber].Cards.Select(c => new { c.InstanceId, c.Cost }).ToList();
 
-            foreach (var item in cards)
+            if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
             {
-                if (item.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
-                    continue;
 
-                var summon = _random.Next(1) == 0;
-
-                if (summon)
+                foreach (var item in cards)
                 {
-                    referee.Summon(item.InstanceId);
-                }
+                    if (item.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                        continue;
 
-                if (getMoveAsString)
-                {
-                    result += $"SUMMON {item.InstanceId}; ";
+                    var summon = _random.Next(1) == 0;
+
+                    if (summon)
+                    {
+                        referee.Summon(item.InstanceId);
+                    }
+
+                    if (getMoveAsString)
+                    {
+                        result += $"SUMMON {item.InstanceId}; ";
+                    }
                 }
             }
 

@@ -76,6 +76,24 @@ namespace LegendsOfCodeAndMagic
                 Type = type
             };
         }
+
+        public double GetScore()
+        {
+            var hypotesisCost = Configuration.DamageCost * Damage
+                + Configuration.CardDrawCost * CardDraw
+                + Configuration.EnemyHpCost * EnemyHp
+                + Configuration.HealthCost * Health
+                + Configuration.PlayerHPCost * PlayerHP
+                + Configuration.BreakthroughCost * Abilities.Count(a => a == 'B')
+                + Configuration.ChargeCost * Abilities.Count(a => a == 'C')
+                + Configuration.DrainCost * Abilities.Count(a => a == 'D')
+                + Configuration.GuardCost * Abilities.Count(a => a == 'G')
+                + Configuration.LethalCost * Abilities.Count(a => a == 'L')
+                + Configuration.WardCost * Abilities.Count(a => a == 'W')
+                + Configuration.InitCost;
+
+            return hypotesisCost - Cost;
+        }
     }
 
     public enum CardType
