@@ -15,27 +15,35 @@ namespace LegendsOfCodeAndMagic
 
         public void Summon(int id)
         {
+            PlayCard(id);
+        }
+
+        public void PlayCard(int id)
+        {
             var player = Board.Players[PlayerNumber];
             var card = player.Cards.FirstOrDefault(c => c.InstanceId == id);
-            
 
-            if(card != null && card.Cost <= player.Mana)
+
+            if (card != null && card.Cost <= player.Mana)
             {
                 player.Mana -= card.Cost;
                 player.Cards.Remove(card);
-                Board.PlayersBoards[PlayerNumber].Add(card);
+                if (card.Type == CardType.Creature)
+                {
+                    Board.PlayersBoards[PlayerNumber].Add(card);
+                }
 
-                if(card.EnemyHp != 0)
+                if (card.EnemyHp != 0)
                 {
                     Board.Players[DeffenderNumber].HP += card.EnemyHp;
                 }
 
-                if(card.PlayerHP !=0)
+                if (card.PlayerHP != 0)
                 {
                     Board.Players[PlayerNumber].HP += card.PlayerHP;
                 }
 
-                if(card.CardDraw != 0)
+                if (card.CardDraw != 0)
                 {
                     Board.Players[PlayerNumber].NextTurnDraw += card.CardDraw;
                 }
@@ -46,37 +54,131 @@ namespace LegendsOfCodeAndMagic
         {
             var attacker = Board.PlayersBoards[PlayerNumber].FirstOrDefault(c => c.InstanceId == attackerId);
 
-            if(attacker != null)
+            if (attacker != null)
             {
-                if(deffenderId == -1)
+                if (deffenderId == -1)
                 {
                     Board.Players[DeffenderNumber].HP -= attacker.Damage;
+                    if(attacker.Abilities.Contains("D"))
+                    {
+                        Board.Players[PlayerNumber].HP += attacker.Damage;
+                    }
                 }
                 else
                 {
+                    var damageDealt = attacker.Damage;
+
                     var deffender = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
 
-                    if(deffender != null)
+                    if (deffender != null)
                     {
                         var initialDeffenderHealth = deffender.Health;
 
-                        deffender.Health -= attacker.Damage;
-                        attacker.Health -= deffender.Damage;
-
-                        if(deffender.Health <= 0)
+                        if (!deffender.Abilities.Contains("W"))
                         {
-                            if(attacker.Abilities.Contains("B"))
+                            deffender.Health -= attacker.Damage;
+                        }
+                        else
+                        {
+                            deffender.Abilities = deffender.Abilities.Replace("W", "-");
+                            damageDealt = 0;
+                        }
+
+                        if (!deffender.Abilities.Contains("W"))
+                        {
+                            if(deffender.Abilities.Contains("L"))
+                            {
+                                attacker.Health = 0;
+                            }
+                            else
+                            {
+                                attacker.Health -= deffender.Damage;
+                            }
+                        }
+                        else
+                        {
+                            attacker.Abilities = attacker.Abilities.Replace("W", "-");
+                        }
+
+                        if(damageDealt != 0)
+                        {
+                            if(attacker.Abilities.Contains("L"))
+                            {
+                                deffender.Health = 0;
+                            }
+                            if(attacker.Abilities.Contains("D"))
+                            {
+                                Board.Players[PlayerNumber].HP += attacker.Damage;
+                            }
+                        }
+
+                        if (deffender.Health <= 0)
+                        {
+                            if (attacker.Abilities.Contains("B"))
                             {
                                 Board.Players[DeffenderNumber].HP -= (attacker.Damage - initialDeffenderHealth);
                             }
                             Board.PlayersBoards[DeffenderNumber].Remove(deffender);
                         }
 
-                        if(attacker.Health <= 0)
+                        if (attacker.Health <= 0)
                         {
                             Board.PlayersBoards[PlayerNumber].Remove(attacker);
                         }
                     }
+                }
+            }
+        }
+
+        public void Use(int itemId, int deffenderId)
+        {
+            var item = Board.Players[PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == itemId);
+
+            if (item != null)
+            {
+                PlayCard(itemId);
+
+                if (item.Type == CardType.ItemGreen)
+                {
+                    var creature = Board.PlayersBoards[PlayerNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
+
+                    creature.Damage += item.Damage;
+                    creature.Health += item.Health;
+
+                    var tmpAbilities = creature.Abilities.ToCharArray();
+
+                    for (int i = 0; i < item.Abilities.Length; i++)
+                    {
+                        if (item.Abilities[i] != '-')
+                        {
+                            tmpAbilities[i] = item.Abilities[i];
+                        }
+                    }
+
+                    creature.Abilities = new string(tmpAbilities);
+                }
+                else if (item.Type == CardType.ItemRed || deffenderId != -1)
+                {
+                    var creature = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
+
+                    creature.Damage += item.Damage;
+                    creature.Health += item.Health;
+
+                    var tmpAbilities = creature.Abilities.ToCharArray();
+
+                    for (int i = 0; i < item.Abilities.Length; i++)
+                    {
+                        if (item.Abilities[i] != '-')
+                        {
+                            tmpAbilities[i] = '-';
+                        }
+                    }
+
+                    creature.Abilities = new string(tmpAbilities);
+                }
+                else
+                {
+                    Board.Players[DeffenderNumber].HP += item.Health;
                 }
             }
         }
@@ -109,12 +211,12 @@ namespace LegendsOfCodeAndMagic
         {
             var defenderNumber = playerNumber == 0 ? 1 : 0;
 
-            if(Board.Players[playerNumber].HP <= 0)
+            if (Board.Players[playerNumber].HP <= 0)
             {
                 return Int32.MinValue;
             }
 
-            if(Board.Players[defenderNumber].HP <=0 )
+            if (Board.Players[defenderNumber].HP <= 0)
             {
                 return Int32.MaxValue;
             }

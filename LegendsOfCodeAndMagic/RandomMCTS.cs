@@ -30,11 +30,62 @@ namespace LegendsOfCodeAndMagic
         {
             string result = "";
 
-            var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => new { c.InstanceId, PlayType= "S"} ).ToList();
+            var items = referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Type != CardType.Creature).ToList();
+            var playerCardsCount = referee.Board.PlayersBoards[referee.PlayerNumber].Count;
+
+            foreach (var item in items)
+            {
+                var creatureId = -2;
+                if (item.Type == CardType.ItemGreen && playerCardsCount > 0)
+                {
+                    var creature = _random.Next(-playerCardsCount - 1, playerCardsCount);
+
+                    if (creature > -1)
+                    {
+                        creatureId = referee.Board.PlayersBoards[referee.PlayerNumber][creature].InstanceId;
+                    }
+                }
+                else if (item.Type == CardType.ItemRed)
+                {
+                    var enemyCreaturesCount = referee.Board.PlayersBoards[referee.DeffenderNumber].Count;
+                    if (enemyCreaturesCount > 0)
+                    {
+                        var creature = _random.Next(-enemyCreaturesCount - 1, enemyCreaturesCount);
+
+                        if (creature > -1)
+                        {
+                            creatureId = referee.Board.PlayersBoards[referee.DeffenderNumber][creature].InstanceId;
+                        }
+                    }
+                }
+                else if(item.Type == CardType.ItemBlue)
+                {
+                    var enemyCreaturesCount = referee.Board.PlayersBoards[referee.DeffenderNumber].Count;
+                    var creature = _random.Next(-enemyCreaturesCount - 2, enemyCreaturesCount);
+
+                    if (creature > -2)
+                    {
+                        creatureId = creature != -1 ? referee.Board.PlayersBoards[referee.DeffenderNumber][creature].InstanceId : creature;
+                    }
+                }
+
+                if(creatureId != -2)
+                {
+                    referee.Use(item.InstanceId, creatureId);
+
+                    if(getMoveAsString)
+                    {
+                        result += $"USE {item.InstanceId} {creatureId}; ";
+                    }
+                }
+            }
+
+
+            var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Where(c=>c.Type == CardType.Creature).Select(c => new { c.InstanceId, PlayType = "S" }).ToList();
 
             if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
             {
-                cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
+                cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Type == CardType.Creature && c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
             }
 
             var count = cardIds.Count;
@@ -47,7 +98,7 @@ namespace LegendsOfCodeAndMagic
                 var enemyCardsCount = enemyCards.Count();
 
                 var deffender = _random.Next(-2, enemyCardsCount);
-                if(deffender == -1 && hasGuards)
+                if (deffender == -1 && hasGuards)
                 {
                     deffender = 0;
                 }
@@ -55,18 +106,18 @@ namespace LegendsOfCodeAndMagic
                 var attackerItem = cardIds[attacker];
                 cardIds.RemoveAt(attacker);
 
-                if(deffender != -2)
+                if (deffender != -2)
                 {
                     if (deffender != -1)
                     {
                         deffender = enemyCards.ElementAt(deffender).InstanceId;
                     }
 
-                    if(attackerItem.PlayType == "C")
+                    if (attackerItem.PlayType == "C")
                     {
                         var card = referee.Board.Players[referee.PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == attackerItem.InstanceId);
 
-                        if(card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                        if (card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
                         {
                             referee.Summon(attackerItem.InstanceId);
                             referee.Attack(attackerItem.InstanceId, deffender);

@@ -214,11 +214,62 @@ class RandomMCTS
     {
         string result = "";
 
-        var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => new { c.InstanceId, PlayType = "S" }).ToList();
+        var items = referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Type != CardType.Creature).ToList();
+        var playerCardsCount = referee.Board.PlayersBoards[referee.PlayerNumber].Count;
+
+        foreach (var item in items)
+        {
+            var creatureId = -2;
+            if (item.Type == CardType.ItemGreen && playerCardsCount > 0)
+            {
+                var creature = _random.Next(-playerCardsCount - 1, playerCardsCount);
+
+                if (creature > -1)
+                {
+                    creatureId = referee.Board.PlayersBoards[referee.PlayerNumber][creature].InstanceId;
+                }
+            }
+            else if (item.Type == CardType.ItemRed)
+            {
+                var enemyCreaturesCount = referee.Board.PlayersBoards[referee.DeffenderNumber].Count;
+                if (enemyCreaturesCount > 0)
+                {
+                    var creature = _random.Next(-enemyCreaturesCount - 1, enemyCreaturesCount);
+
+                    if (creature > -1)
+                    {
+                        creatureId = referee.Board.PlayersBoards[referee.DeffenderNumber][creature].InstanceId;
+                    }
+                }
+            }
+            else if (item.Type == CardType.ItemBlue)
+            {
+                var enemyCreaturesCount = referee.Board.PlayersBoards[referee.DeffenderNumber].Count;
+                var creature = _random.Next(-enemyCreaturesCount - 2, enemyCreaturesCount);
+
+                if (creature > -2)
+                {
+                    creatureId = creature != -1 ? referee.Board.PlayersBoards[referee.DeffenderNumber][creature].InstanceId : creature;
+                }
+            }
+
+            if (creatureId != -2)
+            {
+                referee.Use(item.InstanceId, creatureId);
+
+                if (getMoveAsString)
+                {
+                    result += $"USE {item.InstanceId} {creatureId}; ";
+                }
+            }
+        }
+
+
+        var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Where(c => c.Type == CardType.Creature).Select(c => new { c.InstanceId, PlayType = "S" }).ToList();
 
         if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
         {
-            cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
+            cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Type == CardType.Creature && c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
         }
 
         var count = cardIds.Count;
@@ -362,6 +413,11 @@ class Referee
 
     public void Summon(int id)
     {
+        PlayCard(id);
+    }
+
+    public void PlayCard(int id)
+    {
         var player = Board.Players[PlayerNumber];
         var card = player.Cards.FirstOrDefault(c => c.InstanceId == id);
 
@@ -370,7 +426,10 @@ class Referee
         {
             player.Mana -= card.Cost;
             player.Cards.Remove(card);
-            Board.PlayersBoards[PlayerNumber].Add(card);
+            if (card.Type == CardType.Creature)
+            {
+                Board.PlayersBoards[PlayerNumber].Add(card);
+            }
 
             if (card.EnemyHp != 0)
             {
@@ -398,17 +457,58 @@ class Referee
             if (deffenderId == -1)
             {
                 Board.Players[DeffenderNumber].HP -= attacker.Damage;
+                if (attacker.Abilities.Contains("D"))
+                {
+                    Board.Players[PlayerNumber].HP += attacker.Damage;
+                }
             }
             else
             {
+                var damageDealt = attacker.Damage;
+
                 var deffender = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
 
                 if (deffender != null)
                 {
                     var initialDeffenderHealth = deffender.Health;
 
-                    deffender.Health -= attacker.Damage;
-                    attacker.Health -= deffender.Damage;
+                    if (!deffender.Abilities.Contains("W"))
+                    {
+                        deffender.Health -= attacker.Damage;
+                    }
+                    else
+                    {
+                        deffender.Abilities = deffender.Abilities.Replace("W", "-");
+                        damageDealt = 0;
+                    }
+
+                    if (!deffender.Abilities.Contains("W"))
+                    {
+                        if (deffender.Abilities.Contains("L"))
+                        {
+                            attacker.Health = 0;
+                        }
+                        else
+                        {
+                            attacker.Health -= deffender.Damage;
+                        }
+                    }
+                    else
+                    {
+                        attacker.Abilities = attacker.Abilities.Replace("W", "-");
+                    }
+
+                    if (damageDealt != 0)
+                    {
+                        if (attacker.Abilities.Contains("L"))
+                        {
+                            deffender.Health = 0;
+                        }
+                        if (attacker.Abilities.Contains("D"))
+                        {
+                            Board.Players[PlayerNumber].HP += attacker.Damage;
+                        }
+                    }
 
                     if (deffender.Health <= 0)
                     {
@@ -424,6 +524,59 @@ class Referee
                         Board.PlayersBoards[PlayerNumber].Remove(attacker);
                     }
                 }
+            }
+        }
+    }
+
+    public void Use(int itemId, int deffenderId)
+    {
+        var item = Board.Players[PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == itemId);
+
+        if (item != null)
+        {
+            PlayCard(itemId);
+
+            if (item.Type == CardType.ItemGreen)
+            {
+                var creature = Board.PlayersBoards[PlayerNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
+
+                creature.Damage += item.Damage;
+                creature.Health += item.Health;
+
+                var tmpAbilities = creature.Abilities.ToCharArray();
+
+                for (int i = 0; i < item.Abilities.Length; i++)
+                {
+                    if (item.Abilities[i] != '-')
+                    {
+                        tmpAbilities[i] = item.Abilities[i];
+                    }
+                }
+
+                creature.Abilities = new string(tmpAbilities);
+            }
+            else if (item.Type == CardType.ItemRed || deffenderId != -1)
+            {
+                var creature = Board.PlayersBoards[DeffenderNumber].FirstOrDefault(c => c.InstanceId == deffenderId);
+
+                creature.Damage += item.Damage;
+                creature.Health += item.Health;
+
+                var tmpAbilities = creature.Abilities.ToCharArray();
+
+                for (int i = 0; i < item.Abilities.Length; i++)
+                {
+                    if (item.Abilities[i] != '-')
+                    {
+                        tmpAbilities[i] = '-';
+                    }
+                }
+
+                creature.Abilities = new string(tmpAbilities);
+            }
+            else
+            {
+                Board.Players[DeffenderNumber].HP += item.Health;
             }
         }
     }
@@ -679,6 +832,11 @@ class State
         }
     }
 
+    public void ClearHand(List<int> handCards)
+    {
+        MyCards = MyCards.Where(c => handCards.Contains(c.InstanceId)).ToList();
+    }
+
     public void AddToMyBoard(Card card)
     {
         MyBoard.Add(card);
@@ -787,6 +945,10 @@ class TurnProcessor
         _state.EnemyBoard.Clear();
 
         int cardCount = int.Parse(Console.ReadLine());
+
+
+        List<int> handCards = new List<int>();
+
         for (int i = 0; i < cardCount; i++)
         {
             inputs = Console.ReadLine().Split(' ');
@@ -820,6 +982,7 @@ class TurnProcessor
             {
                 case 0:
                     _state.DrawCard(cardNumber, instanceId);
+                    handCards.Add(instanceId);
                     break;
                 case -1:
                     _state.AddToEnemyPlayedCards(cardNumber, instanceId);
@@ -830,6 +993,8 @@ class TurnProcessor
                     break;
             }
         }
+
+        _state.ClearHand(handCards);
 
         var move = _randomMCTS.GetMove(90);
 
