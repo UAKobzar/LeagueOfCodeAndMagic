@@ -104,6 +104,10 @@ namespace LegendsOfCodeAndMagic
             _state.EnemyBoard.Clear();
 
             int cardCount = int.Parse(Console.ReadLine());
+
+
+            List<int> handCards = new List<int>();
+
             for (int i = 0; i < cardCount; i++)
             {
                 inputs = Console.ReadLine().Split(' ');
@@ -137,6 +141,7 @@ namespace LegendsOfCodeAndMagic
                 {
                     case 0:
                         _state.DrawCard(cardNumber, instanceId);
+                        handCards.Add(instanceId);
                         break;
                     case -1:
                         _state.AddToEnemyPlayedCards(cardNumber, instanceId);
@@ -147,6 +152,8 @@ namespace LegendsOfCodeAndMagic
                         break;
                 }
             }
+
+            _state.ClearHand(handCards);
 
             var move = _randomMCTS.GetMove(90);
 

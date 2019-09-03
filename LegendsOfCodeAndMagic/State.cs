@@ -202,6 +202,11 @@ namespace LegendsOfCodeAndMagic
             }
         }
 
+        public void ClearHand(List<int> handCards)
+        {
+            MyCards = MyCards.Where(c => handCards.Contains(c.InstanceId)).ToList();
+        }
+
         public void AddToMyBoard(Card card)
         {
             MyBoard.Add(card);
