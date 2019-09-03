@@ -97,6 +97,24 @@ public class Card : ICloneable
             Type = type
         };
     }
+
+    public double GetScore()
+    {
+        var hypotesisCost = Configuration.DamageCost * Damage
+            + Configuration.CardDrawCost * CardDraw
+            + Configuration.EnemyHpCost * EnemyHp
+            + Configuration.HealthCost * Health
+            + Configuration.PlayerHPCost * PlayerHP
+            + Configuration.BreakthroughCost * Abilities.Count(a => a == 'B')
+            + Configuration.ChargeCost * Abilities.Count(a => a == 'C')
+            + Configuration.DrainCost * Abilities.Count(a => a == 'D')
+            + Configuration.GuardCost * Abilities.Count(a => a == 'G')
+            + Configuration.LethalCost * Abilities.Count(a => a == 'L')
+            + Configuration.WardCost * Abilities.Count(a => a == 'W')
+            + Configuration.InitCost;
+
+        return hypotesisCost - Cost;
+    }
 }
 
 public enum CardType
@@ -105,6 +123,22 @@ public enum CardType
     ItemGreen,
     ItemRed,
     ItemBlue
+}
+
+class Configuration
+{
+    public static double DamageCost => 0.703;
+    public static double HealthCost => 0.008;
+    public static double BreakthroughCost => 0.385;
+    public static double ChargeCost => 0.684;
+    public static double DrainCost => 0.321;
+    public static double GuardCost => 0.460;
+    public static double LethalCost => 0.529;
+    public static double WardCost => 0.412;
+    public static double PlayerHPCost => 0.327;
+    public static double EnemyHpCost => -0.456;
+    public static double CardDrawCost => 0.974;
+    public static double InitCost => 1.057;
 }
 
 public class GamePlayer : ICloneable
@@ -121,6 +155,7 @@ public class GamePlayer : ICloneable
     public int MaxMana { get; set; }
     public int Mana { get; set; }
     public int HP { get; set; }
+    public int NextTurnDraw { get; set; }
 
     public object Clone()
     {
@@ -130,7 +165,8 @@ public class GamePlayer : ICloneable
             Deck = new Queue<Card>(this.Deck.Select(q => q.Clone() as Card)),
             MaxMana = this.MaxMana,
             Mana = this.Mana,
-            HP = this.HP
+            HP = this.HP,
+            NextTurnDraw = this.NextTurnDraw
         };
     }
 }
@@ -178,45 +214,87 @@ class RandomMCTS
     {
         string result = "";
 
-        var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => c.InstanceId).ToList();
+        var cardIds = referee.Board.PlayersBoards[referee.PlayerNumber].Select(c => new { c.InstanceId, PlayType = "S" }).ToList();
 
-        foreach (var item in cardIds)
+        if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
+        {
+            cardIds.AddRange(referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Abilities.Contains("C")).Select(c => new { c.InstanceId, PlayType = "C" }));
+        }
+
+        var count = cardIds.Count;
+
+        for (int i = 0; i < count; i++)
         {
             var enemyBoard = referee.Board.PlayersBoards[referee.DeffenderNumber];
-            var enemyCardsCount = enemyBoard.Count;
+            var hasGuards = enemyBoard.Any(c => c.Abilities.Contains("G"));
+            var enemyCards = hasGuards ? enemyBoard.Where(c => c.Abilities.Contains("G")) : enemyBoard;
+            var enemyCardsCount = enemyCards.Count();
 
-            var deffender = _random.Next(-1, enemyCardsCount);
-
-            if (deffender != -1)
+            var deffender = _random.Next(-2, enemyCardsCount);
+            if (deffender == -1 && hasGuards)
             {
-                deffender = enemyBoard[deffender].InstanceId;
+                deffender = 0;
             }
+            var attacker = _random.Next(cardIds.Count);
+            var attackerItem = cardIds[attacker];
+            cardIds.RemoveAt(attacker);
 
-            referee.Attack(item, deffender);
-
-            if (getMoveAsString)
+            if (deffender != -2)
             {
-                result += $"ATTACK {item} {deffender}; ";
+                if (deffender != -1)
+                {
+                    deffender = enemyCards.ElementAt(deffender).InstanceId;
+                }
+
+                if (attackerItem.PlayType == "C")
+                {
+                    var card = referee.Board.Players[referee.PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == attackerItem.InstanceId);
+
+                    if (card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                    {
+                        referee.Summon(attackerItem.InstanceId);
+                        referee.Attack(attackerItem.InstanceId, deffender);
+
+                        if (getMoveAsString)
+                        {
+                            result += $"SUMMON {attackerItem.InstanceId}; ";
+                            result += $"ATTACK {attackerItem.InstanceId} {deffender}; ";
+                        }
+                    }
+                }
+                else
+                {
+                    referee.Attack(attackerItem.InstanceId, deffender);
+
+                    if (getMoveAsString)
+                    {
+                        result += $"ATTACK {attackerItem.InstanceId} {deffender}; ";
+                    }
+                }
             }
         }
 
         var cards = referee.Board.Players[referee.PlayerNumber].Cards.Select(c => new { c.InstanceId, c.Cost }).ToList();
 
-        foreach (var item in cards)
+        if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
         {
-            if (item.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
-                continue;
 
-            var summon = _random.Next(1) == 0;
-
-            if (summon)
+            foreach (var item in cards)
             {
-                referee.Summon(item.InstanceId);
-            }
+                if (item.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                    continue;
 
-            if (getMoveAsString)
-            {
-                result += $"SUMMON {item.InstanceId}; ";
+                var summon = _random.Next(1) == 0;
+
+                if (summon)
+                {
+                    referee.Summon(item.InstanceId);
+                }
+
+                if (getMoveAsString)
+                {
+                    result += $"SUMMON {item.InstanceId}; ";
+                }
             }
         }
 
@@ -293,6 +371,21 @@ class Referee
             player.Mana -= card.Cost;
             player.Cards.Remove(card);
             Board.PlayersBoards[PlayerNumber].Add(card);
+
+            if (card.EnemyHp != 0)
+            {
+                Board.Players[DeffenderNumber].HP += card.EnemyHp;
+            }
+
+            if (card.PlayerHP != 0)
+            {
+                Board.Players[PlayerNumber].HP += card.PlayerHP;
+            }
+
+            if (card.CardDraw != 0)
+            {
+                Board.Players[PlayerNumber].NextTurnDraw += card.CardDraw;
+            }
         }
     }
 
@@ -312,11 +405,17 @@ class Referee
 
                 if (deffender != null)
                 {
+                    var initialDeffenderHealth = deffender.Health;
+
                     deffender.Health -= attacker.Damage;
                     attacker.Health -= deffender.Damage;
 
                     if (deffender.Health <= 0)
                     {
+                        if (attacker.Abilities.Contains("B"))
+                        {
+                            Board.Players[DeffenderNumber].HP -= (attacker.Damage - initialDeffenderHealth);
+                        }
                         Board.PlayersBoards[DeffenderNumber].Remove(deffender);
                     }
 
@@ -337,10 +436,15 @@ class Referee
         PlayerNumber = DeffenderNumber;
 
         Board.Players[PlayerNumber].Mana = ++Board.Players[PlayerNumber].MaxMana;
-        if (Board.Players[PlayerNumber].Deck.Any())
+        for (int i = 0; i < Board.Players[PlayerNumber].NextTurnDraw; i++)
         {
-            Board.Players[PlayerNumber].Cards.Add(Board.Players[PlayerNumber].Deck.Dequeue());
+            if (Board.Players[PlayerNumber].Deck.Any())
+            {
+                Board.Players[PlayerNumber].Cards.Add(Board.Players[PlayerNumber].Deck.Dequeue());
+            }
         }
+
+        Board.Players[PlayerNumber].NextTurnDraw = 1;
     }
 
     public void Reset()
@@ -352,13 +456,26 @@ class Referee
     {
         var defenderNumber = playerNumber == 0 ? 1 : 0;
 
+        if (Board.Players[playerNumber].HP <= 0)
+        {
+            return Int32.MinValue;
+        }
+
+        if (Board.Players[defenderNumber].HP <= 0)
+        {
+            return Int32.MaxValue;
+        }
+
         var score = 0;
 
-        score += Board.PlayersBoards[playerNumber].Sum(c => c.Health + c.Damage);
-        score -= Board.PlayersBoards[defenderNumber].Sum(c => c.Health + c.Damage);
+        score += Board.PlayersBoards[playerNumber].Sum(c => c.Health + c.Damage * 2);
+        score -= Board.PlayersBoards[defenderNumber].Sum(c => c.Health + c.Damage * 2);
 
-        score += Board.Players[playerNumber].HP;
-        score -= Board.Players[playerNumber].HP;
+        score += Board.Players[playerNumber].HP * 2;
+        score -= Board.Players[defenderNumber].HP * 2;
+
+        score += Board.Players[playerNumber].Cards.Count;
+        score -= Board.Players[defenderNumber].Cards.Count;
 
         return score;
     }
@@ -395,6 +512,9 @@ class State
 
     public int EnemyHP { get; set; }
     public int MyHP { get; set; }
+
+    public int MyPlayerDraw { get; set; }
+    public int EnemyPlayerDraw { get; set; }
 
     private int _depth;
     private Random _random = new Random();
@@ -596,8 +716,8 @@ class TurnProcessor
         }
         int cardCount = int.Parse(Console.ReadLine());
 
-        var minCost = Int32.MaxValue;
-        var minIndex = -1;
+        double maxScore = Double.MinValue;
+        var maxIndex = -1;
 
         List<Card> cards = new List<Card>();
 
@@ -618,19 +738,21 @@ class TurnProcessor
                 CardDraw = int.Parse(inputs[10])
             };
 
-            if (card.Cost < minCost)
+            var score = card.GetScore();
+
+            if (score > maxScore)
             {
-                minCost = card.Cost;
-                minIndex = i;
+                maxScore = score;
+                maxIndex = i;
             }
 
             cards.Add(card);
         }
 
         _state.EnemyPool.AddRange(cards);
-        _state.MyPool.Add(cards[minIndex].Clone() as Card);
+        _state.MyPool.Add(cards[maxIndex].Clone() as Card);
 
-        Console.WriteLine("PICK " + minIndex);
+        Console.WriteLine("PICK " + maxIndex);
     }
 
     public void ProcessGameTurn()
@@ -641,6 +763,7 @@ class TurnProcessor
             inputs = Console.ReadLine().Split(' ');
             _state.MyHP = int.Parse(inputs[0]);
             _state.MyMana = int.Parse(inputs[1]);
+            _state.MyPlayerDraw = int.Parse(inputs[4]);
         }
         {
             inputs = Console.ReadLine().Split(' ');
@@ -648,7 +771,7 @@ class TurnProcessor
             _state.EnemyMana = int.Parse(inputs[1]);
             _state.EnemyDeckCardsNumber = int.Parse(inputs[2]);
             int playerRune = int.Parse(inputs[3]);
-            int playerDraw = int.Parse(inputs[4]);
+            _state.EnemyPlayerDraw = int.Parse(inputs[4]);
         }
 
         inputs = Console.ReadLine().Split(' ');

@@ -36,6 +36,9 @@ namespace LegendsOfCodeAndMagic
         public int EnemyHP { get; set; }
         public int MyHP { get; set; }
 
+        public int MyPlayerDraw { get; set; }
+        public int EnemyPlayerDraw { get; set; }
+
         private int _depth;
         private Random _random = new Random();
 

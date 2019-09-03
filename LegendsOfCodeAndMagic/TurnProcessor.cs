@@ -33,8 +33,8 @@ namespace LegendsOfCodeAndMagic
             }
             int cardCount = int.Parse(Console.ReadLine());
 
-            var minCost = Int32.MaxValue;
-            var minIndex = -1;
+            double maxScore = Double.MinValue;
+            var maxIndex = -1;
 
             List<Card> cards = new List<Card>();
 
@@ -55,19 +55,21 @@ namespace LegendsOfCodeAndMagic
                     CardDraw = int.Parse(inputs[10])
                 };
 
-                if (card.Cost < minCost)
+                var score = card.GetScore();
+
+                if (score > maxScore)
                 {
-                    minCost = card.Cost;
-                    minIndex = i;
+                    maxScore = score;
+                    maxIndex = i;
                 }
 
                 cards.Add(card);
             }
 
             _state.EnemyPool.AddRange(cards);
-            _state.MyPool.Add(cards[minIndex].Clone() as Card);
+            _state.MyPool.Add(cards[maxIndex].Clone() as Card);
 
-            Console.WriteLine("PICK " + minIndex);
+            Console.WriteLine("PICK " + maxIndex);
         }
 
         public void ProcessGameTurn()
@@ -78,6 +80,7 @@ namespace LegendsOfCodeAndMagic
                 inputs = Console.ReadLine().Split(' ');
                 _state.MyHP = int.Parse(inputs[0]);
                 _state.MyMana = int.Parse(inputs[1]);
+                _state.MyPlayerDraw = int.Parse(inputs[4]);
             }
             {
                 inputs = Console.ReadLine().Split(' ');
@@ -85,7 +88,7 @@ namespace LegendsOfCodeAndMagic
                 _state.EnemyMana = int.Parse(inputs[1]);
                 _state.EnemyDeckCardsNumber = int.Parse(inputs[2]);
                 int playerRune = int.Parse(inputs[3]);
-                int playerDraw = int.Parse(inputs[4]);
+                _state.EnemyPlayerDraw = int.Parse(inputs[4]);
             }
 
             inputs = Console.ReadLine().Split(' ');
