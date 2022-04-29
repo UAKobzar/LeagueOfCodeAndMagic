@@ -69,7 +69,8 @@ namespace LegendsOfCodeAndMagic
                     }
                 }
 
-                if(creatureId != -2)
+
+                if(creatureId != -2 && item.Cost <= referee.Board.Players[referee.PlayerNumber].Mana)
                 {
                     referee.Use(item.InstanceId, creatureId);
 
@@ -117,7 +118,7 @@ namespace LegendsOfCodeAndMagic
                     {
                         var card = referee.Board.Players[referee.PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == attackerItem.InstanceId);
 
-                        if (card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                        if (card.Cost <= referee.Board.Players[referee.PlayerNumber].Mana)
                         {
                             referee.Summon(attackerItem.InstanceId);
                             referee.Attack(attackerItem.InstanceId, deffender);
@@ -141,7 +142,7 @@ namespace LegendsOfCodeAndMagic
                 }
             }
 
-            var cards = referee.Board.Players[referee.PlayerNumber].Cards.Select(c => new { c.InstanceId, c.Cost }).ToList();
+            var cards = referee.Board.Players[referee.PlayerNumber].Cards.Where(c=>c.Type == CardType.Creature).Select(c => new { c.InstanceId, c.Cost }).ToList();
 
             if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
             {
@@ -170,7 +171,7 @@ namespace LegendsOfCodeAndMagic
             return result;
         }
 
-        public (string move, int score) RollOut(Referee referee)
+        public (string move, double score) RollOut(Referee referee)
         {
             referee.Reset();
 
@@ -188,7 +189,7 @@ namespace LegendsOfCodeAndMagic
 
         public string GetMove(int time)
         {
-            Dictionary<string, int> moves = new Dictionary<string, int>();
+            Dictionary<string, double> moves = new Dictionary<string, double>();
             Stopwatch timer = new Stopwatch();
 
             timer.Start();
