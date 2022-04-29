@@ -19,12 +19,8 @@ namespace Terminal
             //var file = await CardParser.Parser.Parse();
             //File.WriteAllText(@"D:\OwnProjects\LegendsOfCodeAndMagic\LegendsOfCodeAndMagic\CardsList.cs", file);
 
-            //var values = await Descent.GetValues();
-
-            //foreach (var item in values)
-            //{
-            //    Console.WriteLine(item.Key + ": " + item.Value);
-            //}
+            //var file = await Descent.GetAsFile();
+            //File.WriteAllText(@"D:\OwnProjects\LegendsOfCodeAndMagic\LegendsOfCodeAndMagic\Configuration.cs", file);
 
             var oneFile = OneFileCompiller.Compiller.Compile(@"D:\OwnProjects\LegendsOfCodeAndMagic\LegendsOfCodeAndMagic");
             File.WriteAllText(@"D:\OwnProjects\LegendsOfCodeAndMagic\OneFile.cs", oneFile);

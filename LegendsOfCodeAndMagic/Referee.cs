@@ -207,7 +207,7 @@ namespace LegendsOfCodeAndMagic
             Board = InitialBoard.Clone() as Board;
         }
 
-        public int GetScore(int playerNumber)
+        public double GetScore(int playerNumber)
         {
             var defenderNumber = playerNumber == 0 ? 1 : 0;
 
@@ -221,10 +221,10 @@ namespace LegendsOfCodeAndMagic
                 return Int32.MaxValue;
             }
 
-            var score = 0;
+            var score = 0.0;
 
-            score += Board.PlayersBoards[playerNumber].Sum(c => c.Health + c.Damage * 2);
-            score -= Board.PlayersBoards[defenderNumber].Sum(c => c.Health + c.Damage * 2);
+            score += Board.PlayersBoards[playerNumber].Sum(c => c.GetScore());
+            score -= Board.PlayersBoards[defenderNumber].Sum(c => c.GetScore());
 
             score += Board.Players[playerNumber].HP * 2;
             score -= Board.Players[defenderNumber].HP * 2;

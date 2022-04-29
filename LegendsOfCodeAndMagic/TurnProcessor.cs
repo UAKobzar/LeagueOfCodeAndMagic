@@ -56,7 +56,7 @@ namespace LegendsOfCodeAndMagic
                 };
 
                 var score = card.GetScore();
-
+                Console.Error.WriteLine(score);
                 if (score > maxScore)
                 {
                     maxScore = score;
