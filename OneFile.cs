@@ -100,18 +100,18 @@ public class Card : ICloneable
 
     public double GetScore()
     {
-        var hypotesisCost = Configuration.DamageCost * Damage
-            + Configuration.CardDrawCost * CardDraw
-            + Configuration.EnemyHpCost * EnemyHp
-            + Configuration.HealthCost * Health
-            + Configuration.PlayerHPCost * PlayerHP
-            + Configuration.BreakthroughCost * Abilities.Count(a => a == 'B')
-            + Configuration.ChargeCost * Abilities.Count(a => a == 'C')
-            + Configuration.DrainCost * Abilities.Count(a => a == 'D')
-            + Configuration.GuardCost * Abilities.Count(a => a == 'G')
-            + Configuration.LethalCost * Abilities.Count(a => a == 'L')
-            + Configuration.WardCost * Abilities.Count(a => a == 'W')
-            + Configuration.InitCost;
+        var hypotesisCost = Configuration.DamageCost[(int)this.Type] * Damage
+            + Configuration.CardDrawCost[(int)this.Type] * CardDraw
+            + Configuration.EnemyHpCost[(int)this.Type] * EnemyHp
+            + Configuration.HealthCost[(int)this.Type] * Health
+            + Configuration.PlayerHPCost[(int)this.Type] * PlayerHP
+            + Configuration.BreakthroughCost[(int)this.Type] * Abilities.Count(a => a == 'B')
+            + Configuration.ChargeCost[(int)this.Type] * Abilities.Count(a => a == 'C')
+            + Configuration.DrainCost[(int)this.Type] * Abilities.Count(a => a == 'D')
+            + Configuration.GuardCost[(int)this.Type] * Abilities.Count(a => a == 'G')
+            + Configuration.LethalCost[(int)this.Type] * Abilities.Count(a => a == 'L')
+            + Configuration.WardCost[(int)this.Type] * Abilities.Count(a => a == 'W')
+            + Configuration.InitCostCost[(int)this.Type];
 
         return hypotesisCost - Cost;
     }
@@ -127,18 +127,19 @@ public enum CardType
 
 class Configuration
 {
-    public static double DamageCost => 0.703;
-    public static double HealthCost => 0.008;
-    public static double BreakthroughCost => 0.385;
-    public static double ChargeCost => 0.684;
-    public static double DrainCost => 0.321;
-    public static double GuardCost => 0.460;
-    public static double LethalCost => 0.529;
-    public static double WardCost => 0.412;
-    public static double PlayerHPCost => 0.327;
-    public static double EnemyHpCost => -0.456;
-    public static double CardDrawCost => 0.974;
-    public static double InitCost => 1.057;
+    public static double[] DamageCost => new double[] { 0.538605881408985, 0.700744447985581, -0.616757560590087, 0, };
+    public static double[] HealthCost => new double[] { 0.472076187175127, 0.329644066468276, -0.0412775080451156, -0.702175160089566, };
+    public static double[] BreakthroughCost => new double[] { 0.174210749990308, 0.0640366415544007, 0.0220183273985539, 0, };
+    public static double[] ChargeCost => new double[] { 0.310918020175352, 0.146047254408051, 0.0220183273985539, 0, };
+    public static double[] DrainCost => new double[] { 0.181710337282304, 0.0724615230722244, 0.0220183273985539, 0, };
+    public static double[] GuardCost => new double[] { 0.0898405136454066, 0.0890588076412464, -0.167302072062705, 0, };
+    public static double[] LethalCost => new double[] { 0.174206815970283, 0.369193689347353, 0.0220183273985539, 0, };
+    public static double[] WardCost => new double[] { 0.203701292075281, 0.577715207780982, 0.0220183273985539, 0, };
+    public static double[] PlayerHPCost => new double[] { 0.218243991143658, 0.242302147897888, 0, 0.352177998922807, };
+    public static double[] EnemyHpCost => new double[] { -0.215770919213012, 0, -0.520133017388523, -0.444016649193787, };
+    public static double[] CardDrawCost => new double[] { 0.142196394721955, 0.273721805360335, 1.31073602443807, 0.500520392032127, };
+    public static double[] InitCostCost => new double[] { 0.0993329123289335, 0.719592791722195, 1.27685889525721, 0.56099951575609, };
+
 }
 
 public class GamePlayer : ICloneable
@@ -253,7 +254,8 @@ class RandomMCTS
                 }
             }
 
-            if (creatureId != -2)
+
+            if (creatureId != -2 && item.Cost <= referee.Board.Players[referee.PlayerNumber].Mana)
             {
                 referee.Use(item.InstanceId, creatureId);
 
@@ -301,7 +303,7 @@ class RandomMCTS
                 {
                     var card = referee.Board.Players[referee.PlayerNumber].Cards.FirstOrDefault(c => c.InstanceId == attackerItem.InstanceId);
 
-                    if (card.Cost > referee.Board.Players[referee.PlayerNumber].Mana)
+                    if (card.Cost <= referee.Board.Players[referee.PlayerNumber].Mana)
                     {
                         referee.Summon(attackerItem.InstanceId);
                         referee.Attack(attackerItem.InstanceId, deffender);
@@ -325,7 +327,7 @@ class RandomMCTS
             }
         }
 
-        var cards = referee.Board.Players[referee.PlayerNumber].Cards.Select(c => new { c.InstanceId, c.Cost }).ToList();
+        var cards = referee.Board.Players[referee.PlayerNumber].Cards.Where(c => c.Type == CardType.Creature).Select(c => new { c.InstanceId, c.Cost }).ToList();
 
         if (referee.Board.PlayersBoards[referee.PlayerNumber].Count < 6)
         {
@@ -354,7 +356,7 @@ class RandomMCTS
         return result;
     }
 
-    public (string move, int score) RollOut(Referee referee)
+    public (string move, double score) RollOut(Referee referee)
     {
         referee.Reset();
 
@@ -372,7 +374,7 @@ class RandomMCTS
 
     public string GetMove(int time)
     {
-        Dictionary<string, int> moves = new Dictionary<string, int>();
+        Dictionary<string, double> moves = new Dictionary<string, double>();
         Stopwatch timer = new Stopwatch();
 
         timer.Start();
@@ -605,7 +607,7 @@ class Referee
         Board = InitialBoard.Clone() as Board;
     }
 
-    public int GetScore(int playerNumber)
+    public double GetScore(int playerNumber)
     {
         var defenderNumber = playerNumber == 0 ? 1 : 0;
 
@@ -619,10 +621,10 @@ class Referee
             return Int32.MaxValue;
         }
 
-        var score = 0;
+        var score = 0.0;
 
-        score += Board.PlayersBoards[playerNumber].Sum(c => c.Health + c.Damage * 2);
-        score -= Board.PlayersBoards[defenderNumber].Sum(c => c.Health + c.Damage * 2);
+        score += Board.PlayersBoards[playerNumber].Sum(c => c.GetScore());
+        score -= Board.PlayersBoards[defenderNumber].Sum(c => c.GetScore());
 
         score += Board.Players[playerNumber].HP * 2;
         score -= Board.Players[defenderNumber].HP * 2;
@@ -897,7 +899,7 @@ class TurnProcessor
             };
 
             var score = card.GetScore();
-
+            Console.Error.WriteLine(score);
             if (score > maxScore)
             {
                 maxScore = score;

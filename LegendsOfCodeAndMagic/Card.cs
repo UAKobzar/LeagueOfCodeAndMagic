@@ -79,18 +79,18 @@ namespace LegendsOfCodeAndMagic
 
         public double GetScore()
         {
-            var hypotesisCost = Configuration.DamageCost * Damage
-                + Configuration.CardDrawCost * CardDraw
-                + Configuration.EnemyHpCost * EnemyHp
-                + Configuration.HealthCost * Health
-                + Configuration.PlayerHPCost * PlayerHP
-                + Configuration.BreakthroughCost * Abilities.Count(a => a == 'B')
-                + Configuration.ChargeCost * Abilities.Count(a => a == 'C')
-                + Configuration.DrainCost * Abilities.Count(a => a == 'D')
-                + Configuration.GuardCost * Abilities.Count(a => a == 'G')
-                + Configuration.LethalCost * Abilities.Count(a => a == 'L')
-                + Configuration.WardCost * Abilities.Count(a => a == 'W')
-                + Configuration.InitCost;
+            var hypotesisCost = Configuration.DamageCost[(int)this.Type] * Damage
+                + Configuration.CardDrawCost[(int)this.Type] * CardDraw
+                + Configuration.EnemyHpCost[(int)this.Type] * EnemyHp
+                + Configuration.HealthCost[(int)this.Type] * Health
+                + Configuration.PlayerHPCost[(int)this.Type] * PlayerHP
+                + Configuration.BreakthroughCost[(int)this.Type] * Abilities.Count(a => a == 'B')
+                + Configuration.ChargeCost[(int)this.Type] * Abilities.Count(a => a == 'C')
+                + Configuration.DrainCost[(int)this.Type] * Abilities.Count(a => a == 'D')
+                + Configuration.GuardCost[(int)this.Type] * Abilities.Count(a => a == 'G')
+                + Configuration.LethalCost[(int)this.Type] * Abilities.Count(a => a == 'L')
+                + Configuration.WardCost[(int)this.Type] * Abilities.Count(a => a == 'W')
+                + Configuration.InitCostCost[(int)this.Type];
 
             return hypotesisCost - Cost;
         }
